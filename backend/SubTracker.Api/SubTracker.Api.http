@@ -1,0 +1,6 @@
+@SubTracker.Api_HostAddress = https://localhost:7213
+
+### Hälsokontroll
+GET {{SubTracker.Api_HostAddress}}/api/health
+
+###
