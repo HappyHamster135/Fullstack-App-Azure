@@ -1,0 +1,9 @@
+namespace SubTracker.Api.Common;
+
+public enum ServiceErrorType
+{
+    Validation,
+    Unauthorized,
+    NotFound,
+    Conflict,
+}
