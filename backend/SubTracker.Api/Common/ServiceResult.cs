@@ -1,20 +1,32 @@
 namespace SubTracker.Api.Common;
 
-public class ServiceResult<T>
+public class ServiceResult
 {
-    private ServiceResult(T? value, ServiceError? error)
+    protected ServiceResult(ServiceError? error)
     {
-        Value = value;
         Error = error;
     }
-
-    public T? Value { get; }
 
     public ServiceError? Error { get; }
 
     public bool Succeeded => Error is null;
 
+    public static ServiceResult Success() => new(null);
+
+    public static ServiceResult Failure(ServiceError error) => new(error);
+}
+
+public class ServiceResult<T> : ServiceResult
+{
+    private ServiceResult(T? value, ServiceError? error)
+        : base(error)
+    {
+        Value = value;
+    }
+
+    public T? Value { get; }
+
     public static ServiceResult<T> Success(T value) => new(value, null);
 
-    public static ServiceResult<T> Failure(ServiceError error) => new(default, error);
+    public static new ServiceResult<T> Failure(ServiceError error) => new(default, error);
 }

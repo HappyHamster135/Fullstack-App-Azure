@@ -12,9 +12,9 @@ using SubTracker.Api.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 
-//---------------
+//-------------
 //-----Database
-//---------------
+//-------------
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException(
@@ -24,9 +24,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
 
 
-//---------------
+//-------------
 //-----Identity
-//---------------
+//-------------
 
 builder.Services
     .AddIdentityCore<AppUser>(options =>
@@ -40,9 +40,9 @@ builder.Services
     .AddErrorDescriber<SwedishIdentityErrorDescriber>();
 
 
-//---------------
+//-------------------
 //-----Authentication
-//---------------
+//-------------------
 
 builder.Services
     .AddOptions<JwtOptions>()
@@ -73,9 +73,9 @@ builder.Services
 builder.Services.AddAuthorization();
 
 
-//---------------
+//---------
 //-----CORS
-//---------------
+//---------
 
 const string FrontendCorsPolicy = "Frontend";
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -87,12 +87,16 @@ builder.Services.AddCors(options =>
         .AllowAnyMethod()));
 
 
-//---------------
+//-------------
 //-----Services
-//---------------
+//-------------
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
@@ -104,9 +108,9 @@ builder.Services.AddOpenApi(options =>
 });
 
 
-//---------------
+//------------
 //-----Startup
-//---------------
+//------------
 
 var app = builder.Build();
 
@@ -140,9 +144,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 
-//---------------
+//--------------
 //-----Endpoints
-//---------------
+//--------------
 
 app.MapOpenApi();
 app.MapScalarApiReference(options => options.WithTitle("SubTracker API"));

@@ -9,7 +9,8 @@ namespace SubTracker.Api.Services;
 public class AuthService(
     UserManager<AppUser> userManager,
     SignInManager<AppUser> signInManager,
-    ITokenService tokenService) : IAuthService
+    ITokenService tokenService,
+    ICategoryService categoryService) : IAuthService
 {
     private static readonly ServiceError InvalidCredentials =
         ServiceError.Unauthorized("Fel e-post eller lösenord.");
@@ -18,9 +19,9 @@ public class AuthService(
         ServiceError.Unauthorized("För många misslyckade försök. Vänta några minuter och försök igen.");
 
 
-    //---------------
+    //-------------
     //-----Register
-    //---------------
+    //-------------
 
     public async Task<ServiceResult<AuthResponse>> RegisterAsync(RegisterRequest request)
     {
@@ -37,13 +38,15 @@ public class AuthService(
             return ServiceResult<AuthResponse>.Failure(ServiceError.Validation(ToValidationErrors(result)));
         }
 
+        await categoryService.CreateDefaultsAsync(user.Id);
+
         return ServiceResult<AuthResponse>.Success(CreateAuthResponse(user));
     }
 
 
-    //---------------
+    //----------
     //-----Login
-    //---------------
+    //----------
 
     public async Task<ServiceResult<AuthResponse>> LoginAsync(LoginRequest request)
     {
@@ -70,9 +73,9 @@ public class AuthService(
     }
 
 
-    //---------------
+    //-----------
     //-----Logout
-    //---------------
+    //-----------
 
     public async Task LogoutAsync(string userId)
     {
@@ -85,9 +88,9 @@ public class AuthService(
     }
 
 
-    //---------------
+    //-----------------
     //-----Current user
-    //---------------
+    //-----------------
 
     public async Task<ServiceResult<UserResponse>> GetCurrentUserAsync(string userId)
     {
@@ -99,9 +102,9 @@ public class AuthService(
     }
 
 
-    //---------------
+    //------------
     //-----Helpers
-    //---------------
+    //------------
 
     private AuthResponse CreateAuthResponse(AppUser user)
     {

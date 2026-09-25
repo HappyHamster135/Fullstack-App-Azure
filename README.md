@@ -6,7 +6,7 @@ Fullstack-app där användaren registrerar sina digitala prenumerationer (kostna
 |---|---|---|
 | Backend | ASP.NET Core Web API (.NET 10, controllers), EF Core Code First, ASP.NET Core Identity | App Service (Linux, Free F1) |
 | Databas | SQL Server – LocalDB lokalt | Azure SQL Database (gratiserbjudandet) |
-| Frontend | React (Vite, JavaScript), React-Bootstrap, React Router, Axios | Static Web Apps (Free) – eller App Service om regionen inte tillåter det |
+| Frontend | React (Vite, JavaScript), React-Bootstrap, React Router, Axios, Recharts | Static Web Apps (Free) – eller App Service om regionen inte tillåter det |
 | CI/CD | GitHub Actions – ett workflow för backend och ett för frontend | |
 
 ## Inlämning
@@ -26,27 +26,46 @@ Webbläsare ──► Azure Static Web Apps (React)
 ```text
 ├── backend/SubTracker.Api/
 │   ├── Controllers/   tar emot HTTP-anrop – tunna, ingen affärslogik
-│   ├── Services/      affärslogik bakom interfaces (IAuthService, ITokenService …)
-│   ├── Dtos/          in- och utdata för API:t (entiteter skickas aldrig direkt)
-│   ├── Entities/      EF Core-entiteter (AppUser m.fl.)
-│   ├── Mappings/      entitet → DTO
+│   ├── Services/      affärslogik bakom interfaces (ISubscriptionService, IAuthService …)
+│   ├── Dtos/          request/response per resurs (entiteter skickas aldrig direkt)
+│   ├── Entities/      Category, Subscription, Payment, AppUser
+│   ├── Mappings/      entitet ↔ DTO
 │   ├── Common/        ServiceResult/ServiceError – resultat från services
 │   ├── Auth/          JWT-inställningar, token-validering, svenska Identity-fel
 │   ├── OpenApi/       JWT-stöd i Scalar
-│   ├── Data/          AppDbContext – relationer och index konfigureras här
+│   ├── Data/          AppDbContext + Configurations/ (relationer och index per entitet)
 │   ├── Migrations/    EF Core-migrationer
 │   └── Program.cs     databas, Identity, autentisering, CORS, OpenAPI/Scalar
 ├── frontend/
 │   ├── public/staticwebapp.config.json   gör att React Router fungerar i Azure
 │   └── src/
-│       ├── api/         axios-klient och API-klasser (AuthApi)
-│       ├── auth/        AuthProvider (state), useAuth, ProtectedRoute, GuestRoute
-│       ├── components/  återanvändbara komponenter
-│       ├── hooks/       useForm
+│       ├── api/         axios-klient och API-klasser (CrudApi → SubscriptionApi, CategoryApi …)
+│       ├── auth/        AuthProvider (inloggning), useAuth, ProtectedRoute, GuestRoute
+│       ├── store/       SubscriptionProvider – appens data med useReducer + Context
+│       ├── components/  återanvändbara komponenter, charts/ med dashboardens diagram
+│       ├── hooks/       useForm, useConfirmDialog
 │       ├── pages/       en komponent per sida
-│       └── utils/       validering
+│       └── utils/       validering och formatering
 └── .github/workflows/  backend.yml, frontend.yml
 ```
+
+## Datamodell
+
+```text
+AppUser 1 ──── * Category 1 ──── * Subscription 1 ──── * Payment
+   │                                   *
+   └───────────────── 1 ───────────────┘
+```
+
+| Entitet | Innehåll |
+|---|---|
+| `Category` | Namn och färg. Varje användare har egna kategorier och får sex standardkategorier vid registrering. |
+| `Subscription` | Namn, pris, betalningsintervall (vecka/månad/kvartal/år), startdatum, nästa betalning, aktiv, anteckning. Räknar själv ut `MonthlyCost` och flyttar fram nästa betalning via `RegisterPayment`. |
+| `Payment` | Belopp och datum – betalningshistorik per prenumeration. |
+
+- **Index:** `(UserId, NextPaymentDate)` på `Subscriptions`, eftersom listan filtreras på användare och sorteras på nästa betalning. Unikt index `(UserId, Name)` på `Categories`, så att en användare inte kan ha två kategorier med samma namn.
+- **Borttagning:** en kategori som används kan inte tas bort (`Restrict`, API:t svarar 409). Tas en prenumeration bort försvinner dess betalningar (`Cascade`).
+- **Åtkomst:** varje fråga filtrerar på den inloggade användarens id. Försöker någon nå en annan användares data svarar API:t 404, så att det inte ens avslöjas att datan finns.
 
 ## Kom igång lokalt
 
@@ -119,6 +138,27 @@ Inga lösenord, nycklar eller connection strings finns i repot. Lokal konfigurat
 | `POST /api/auth/login` | Nej | 200, 400, 401 |
 | `POST /api/auth/logout` | Ja | 204, 401 |
 | `GET /api/auth/me` | Ja | 200, 401 |
+
+## API
+
+Alla endpoints nedan kräver inloggning (401 utan token) och rör bara den inloggade användarens data.
+
+| Endpoint | Beskrivning | Svar |
+|---|---|---|
+| `GET /api/subscriptions` | Alla prenumerationer, sorterade på nästa betalning | 200 |
+| `GET /api/subscriptions/{id}` | En prenumeration | 200, 404 |
+| `POST /api/subscriptions` | Skapa | 201, 400 |
+| `PUT /api/subscriptions/{id}` | Uppdatera | 200, 400, 404 |
+| `DELETE /api/subscriptions/{id}` | Ta bort (inklusive betalningar) | 204, 404 |
+| `GET /api/subscriptions/{id}/payments` | Betalningshistorik | 200, 404 |
+| `POST /api/subscriptions/{id}/payments` | Registrera betalning – flyttar fram nästa betalningsdatum. Tom body `{}` ger pris och dagens datum. | 201, 400, 404 |
+| `DELETE /api/subscriptions/{id}/payments/{paymentId}` | Ta bort betalning | 204, 404 |
+| `GET /api/categories` | Alla kategorier | 200 |
+| `GET /api/categories/{id}` | En kategori | 200, 404 |
+| `POST /api/categories` | Skapa | 201, 400, 409 |
+| `PUT /api/categories/{id}` | Uppdatera | 200, 400, 404, 409 |
+| `DELETE /api/categories/{id}` | Ta bort – nekas om kategorin används | 204, 404, 409 |
+| `GET /api/dashboard` | Sammanställning: total kostnad per månad/år, kostnad per kategori, betalningar inom 30 dagar och betalt per månad (senaste sex) | 200 |
 
 ## CI/CD
 

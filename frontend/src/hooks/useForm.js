@@ -1,50 +1,59 @@
-import { useState } from 'react'
-import { getErrorMessage, getFieldErrors } from '../api/errors.js'
-import { hasErrors } from '../utils/validation.js'
+import { useState } from "react";
+import { getErrorMessage, getFieldErrors } from "../api/errors.js";
+import { hasErrors } from "../utils/validation.js";
 
 export function useForm(initialValues, validate, onSubmit) {
-  const [values, setValues] = useState(initialValues)
-  const [errors, setErrors] = useState({})
-  const [serverError, setServerError] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [values, setValues] = useState(initialValues);
+  const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-
-  //---------------
+  //-----------
   //-----Change
-  //---------------
+  //-----------
 
   const handleChange = (event) => {
-    const { name, value } = event.target
-    setValues((current) => ({ ...current, [name]: value }))
-  }
+    const { name, value, type, checked } = event.target;
 
+    setValues((current) => ({
+      ...current,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
 
-  //---------------
+  //-----------
   //-----Submit
-  //---------------
+  //-----------
 
   const handleSubmit = async (event) => {
-    event.preventDefault()
+    event.preventDefault();
 
-    const validationErrors = validate(values)
-    setErrors(validationErrors)
-    setServerError('')
+    const validationErrors = validate(values);
+    setErrors(validationErrors);
+    setServerError("");
 
     if (hasErrors(validationErrors)) {
-      return
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      await onSubmit(values)
+      await onSubmit(values);
     } catch (error) {
-      setErrors(getFieldErrors(error))
-      setServerError(getErrorMessage(error))
+      setErrors(getFieldErrors(error));
+      setServerError(getErrorMessage(error));
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
-  return { values, errors, serverError, isSubmitting, handleChange, handleSubmit }
+  return {
+    values,
+    errors,
+    serverError,
+    isSubmitting,
+    handleChange,
+    handleSubmit,
+  };
 }

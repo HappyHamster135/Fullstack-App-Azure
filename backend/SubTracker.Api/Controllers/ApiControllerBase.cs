@@ -12,6 +12,9 @@ public abstract class ApiControllerBase : ControllerBase
     protected ActionResult ToActionResult<T>(ServiceResult<T> result, Func<T, ActionResult> onSuccess) =>
         result.Succeeded ? onSuccess(result.Value!) : ToErrorResult(result.Error!);
 
+    protected ActionResult ToActionResult(ServiceResult result, Func<ActionResult> onSuccess) =>
+        result.Succeeded ? onSuccess() : ToErrorResult(result.Error!);
+
     private ActionResult ToErrorResult(ServiceError error)
     {
         if (error.Type == ServiceErrorType.Validation && error.ValidationErrors is not null)
