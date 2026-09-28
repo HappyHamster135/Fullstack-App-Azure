@@ -6,19 +6,19 @@ Fullstack-app där användaren registrerar sina digitala prenumerationer (kostna
 |---|---|---|
 | Backend | ASP.NET Core Web API (.NET 10, controllers), EF Core Code First, ASP.NET Core Identity | App Service (Linux, Free F1) |
 | Databas | SQL Server – LocalDB lokalt | Azure SQL Database (gratiserbjudandet) |
-| Frontend | React (Vite, JavaScript), React-Bootstrap, React Router, Axios, Recharts | Static Web Apps (Free) – eller App Service om regionen inte tillåter det |
+| Frontend | React (Vite, JavaScript), React-Bootstrap, React Router, Axios, Recharts | App Service (Linux, Free F1, samma plan som API:t) – Static Web Apps var inte tillåtet i studentkontots regioner |
 | CI/CD | GitHub Actions – ett workflow för backend och ett för frontend | |
 
 ## Inlämning
 
-- GitHub: `<länk till repot>`
-- Frontend: `<https://...azurestaticapps.net>`
-- API (Scalar): `<https://...azurewebsites.net/scalar>`
+- GitHub: <https://github.com/HappyHamster135/Fullstack-App-Azure>
+- Frontend: <https://web-subtracker-jw-czaqekaghchec7fz.swedencentral-01.azurewebsites.net>
+- API (Scalar): <https://app-subtracker-jw-cxgwdgd5h5bnd8f6.swedencentral-01.azurewebsites.net/scalar>
 
 ## Arkitektur
 
 ```text
-Webbläsare ──► Azure Static Web Apps (React)
+Webbläsare ──► Azure App Service (React, pm2 --spa)
     │
     └── HTTPS-anrop (CORS) ──► Azure App Service (API) ──► Azure SQL Database
 ```
@@ -37,7 +37,7 @@ Webbläsare ──► Azure Static Web Apps (React)
 │   ├── Migrations/    EF Core-migrationer
 │   └── Program.cs     databas, Identity, autentisering, CORS, OpenAPI/Scalar
 ├── frontend/
-│   ├── public/staticwebapp.config.json   gör att React Router fungerar i Azure
+│   ├── public/staticwebapp.config.json   React Router-stöd om frontend flyttas till Static Web Apps
 │   └── src/
 │       ├── api/         axios-klient och API-klasser (CrudApi → SubscriptionApi, CategoryApi …)
 │       ├── auth/        AuthProvider (inloggning), useAuth, ProtectedRoute, GuestRoute
